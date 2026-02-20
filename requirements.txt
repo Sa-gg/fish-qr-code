@@ -1,0 +1,26 @@
+# Philippine Fish Classifier — Python Dependencies
+# Install all at once:  pip install -r requirements.txt
+#
+# Minimum versions tested on AMD A8-7680 (CPU), Python 3.9-3.11, Windows 11
+
+# ── Core deep learning ─────────────────────────────────────────────────────
+tensorflow>=2.12.0          # training + TFLite conversion
+
+# ── Optional: AMD / Intel integrated GPU support on Windows ────────────────
+# Uncomment the line below AND set USE_DIRECTML=True in train_fish_classifier.py
+# tensorflow-directml>=1.15.8
+
+# ── Model export ───────────────────────────────────────────────────────────
+tensorflowjs>=4.0.0         # converts .h5 → TF.js format for the web app
+
+# ── Dataset auto-download ──────────────────────────────────────────────────
+icrawler>=0.6.6             # Bing/Google image crawler (used by download_dataset.py)
+
+# ── Image processing ───────────────────────────────────────────────────────
+Pillow>=9.0.0
+
+# ── Numerical computing (usually pulled in by tensorflow automatically) ────
+numpy>=1.23.0
+
+# ── Plotting training curves ───────────────────────────────────────────────
+matplotlib>=3.6.0

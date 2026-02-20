@@ -1,0 +1,13 @@
+This folder will contain the TensorFlow.js model files after running:
+
+    python convert_model.py
+
+Expected files after conversion:
+    model.json              ← model architecture + weight manifest
+    group1-shard1of1.bin    ← model weights (binary)
+
+These files are loaded directly by web/index.html in the browser.
+No web server is required — Chrome and Edge can load local files.
+
+NOTE: This folder is intentionally empty until you run convert_model.py.
+      The web app will show an error until the model files are present.

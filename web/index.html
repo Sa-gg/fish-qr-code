@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Philippine Fish Classifier</title>
+
+  <!--
+    TensorFlow.js — loaded from CDN.
+    For full offline use: download tfjs from https://cdn.jsdelivr.net/npm/@tensorflow/tfjs
+    and replace the src with a local path, e.g. src="libs/tf.min.js"
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+
+  <style>
+    /* ================================================================
+       RESET & BASE
+    ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #1565C0;
+      --blue-lt: #1976D2;
+      --ocean:   #0288D1;
+      --green:   #2E7D32;
+      --amber:   #F57F17;
+      --red:     #C62828;
+      --bg:      #F0F4F8;
+      --card:    #FFFFFF;
+      --text:    #1A237E;
+      --muted:   #546E7A;
+      --border:  #CFD8DC;
+      --radius:  14px;
+      --shadow:  0 4px 24px rgba(21,101,192,.12);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ================================================================
+       HEADER
+    ================================================================ */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo { font-size: 2.6rem; }
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--blue);
+      margin-top: 6px;
+    }
+    header p {
+      color: var(--muted);
+      font-size: .93rem;
+      margin-top: 6px;
+    }
+
+    /* ================================================================
+       MAIN CARD
+    ================================================================ */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      max-width: 680px;
+      margin: 0 auto 24px;
+      padding: 28px 32px;
+    }
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ================================================================
+       STATUS BAR
+    ================================================================ */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #E3F2FD;
+      border: 1px solid #BBDEFB;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: .88rem;
+      margin-bottom: 20px;
+    }
+    #status-bar.ready   { background: #E8F5E9; border-color: #A5D6A7; }
+    #status-bar.error   { background: #FFEBEE; border-color: #EF9A9A; }
+    #status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--ocean);
+      flex-shrink: 0;
+      animation: pulse 1.4s infinite;
+    }
+    #status-bar.ready   #status-dot { background: var(--green);  animation: none; }
+    #status-bar.error   #status-dot { background: var(--red);    animation: none; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .3; }
+    }
+
+    /* ================================================================
+       DROP ZONE
+    ================================================================ */
+    #drop-zone {
+      border: 2.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    #drop-zone:hover, #drop-zone.drag-over {
+      border-color: var(--blue-lt);
+      background: #E8F0FD;
+    }
+    #drop-zone .icon  { font-size: 2.4rem; display: block; margin-bottom: 10px; }
+    #drop-zone p      { color: var(--muted); font-size: .92rem; }
+    #drop-zone strong { color: var(--blue-lt); cursor: pointer; }
+    #file-input { display: none; }
+
+    /* ================================================================
+       PREVIEW
+    ================================================================ */
+    #preview-wrap {
+      display: none;
+      text-align: center;
+      margin-top: 20px;
+    }
+    #preview-wrap img {
+      max-height: 280px;
+      max-width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
+    }
+    #change-btn {
+      display: block;
+      margin: 10px auto 0;
+      background: none;
+      border: none;
+      color: var(--blue-lt);
+      font-size: .85rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* ================================================================
+       CLASSIFY BUTTON
+    ================================================================ */
+    #classify-btn {
+      display: block;
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: .3px;
+      transition: background .2s, transform .1s;
+    }
+    #classify-btn:hover:not(:disabled) { background: var(--blue-lt); }
+    #classify-btn:active:not(:disabled) { transform: scale(.98); }
+    #classify-btn:disabled {
+      background: #B0BEC5;
+      cursor: not-allowed;
+    }
+
+    /* ================================================================
+       RESULTS
+    ================================================================ */
+    #results-card { display: none; }
+
+    .result-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #E8F5E9;
+      border: 1px solid #A5D6A7;
+      margin-bottom: 18px;
+    }
+    .result-top .fish-icon { font-size: 2.5rem; }
+    .result-top .label     { font-size: 1.4rem; font-weight: 700; color: var(--green); }
+    .result-top .conf-text { font-size: .88rem; color: var(--muted); margin-top: 2px; }
+
+    .bar-row { margin-bottom: 12px; }
+    .bar-row .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .88rem;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .bar-track {
+      height: 10px;
+      background: #ECEFF1;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--ocean), var(--blue));
+      transition: width .5s ease;
+    }
+    .bar-fill.top { background: linear-gradient(90deg, #43A047, #2E7D32); }
+
+    /* low-confidence warning */
+    #low-conf-warn {
+      display: none;
+      background: #FFF8E1;
+      border: 1px solid #FFE082;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: .85rem;
+      color: #5D4037;
+      margin-top: 14px;
+    }
+
+    /* ================================================================
+       HOW TO USE
+    ================================================================ */
+    details {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0;
+      overflow: hidden;
+    }
+    summary {
+      padding: 16px 24px;
+      font-weight: 600;
+      color: var(--blue);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    .details-body {
+      padding: 0 24px 20px;
+      font-size: .88rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .details-body ol { padding-left: 18px; }
+    .details-body code {
+      background: #ECEFF1;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: 'Consolas', monospace;
+      font-size: .85rem;
+      color: #37474F;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: .8rem;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo">🐟</div>
+  <h1>Philippine Fish Classifier</h1>
+  <p>Powered by MobileNetV2 + TensorFlow.js &nbsp;|&nbsp; Bangus · Tilapia · Galunggong</p>
+</header>
+
+<!-- ====================================================================
+     MODEL STATUS CARD
+==================================================================== -->
+<div class="card">
+  <h2>⚡ Model Status</h2>
+  <div id="status-bar">
+    <div id="status-dot"></div>
+    <span id="status-text">Loading model from local files…</span>
+  </div>
+
+  <!-- DROP ZONE -->
+  <div id="drop-zone" title="Click or drag an image here">
+    <span class="icon">📷</span>
+    <p>Drag &amp; drop a fish photo here, or<br>
+       <strong id="browse-link">browse to upload</strong>
+    </p>
+    <p style="font-size:.78rem;margin-top:8px;color:#90A4AE">JPG / PNG / WebP · any size</p>
+  </div>
+  <input type="file" id="file-input" accept="image/*" />
+
+  <!-- IMAGE PREVIEW -->
+  <div id="preview-wrap">
+    <img id="preview-img" src="" alt="Selected fish photo" />
+    <button id="change-btn">Change image</button>
+  </div>
+
+  <button id="classify-btn" disabled>🔍 Classify Fish</button>
+</div>
+
+<!-- ====================================================================
+     RESULTS CARD
+==================================================================== -->
+<div class="card" id="results-card">
+  <h2>📊 Results</h2>
+
+  <div class="result-top" id="result-top">
+    <div class="fish-icon" id="result-icon">🐟</div>
+    <div>
+      <div class="label" id="result-label">—</div>
+      <div class="conf-text" id="result-conf">—</div>
+    </div>
+  </div>
+
+  <div id="bars-container"></div>
+
+  <div id="low-conf-warn">
+    ⚠️ Low confidence — the model is uncertain. Try a clearer photo, or add more
+    training images for this species and retrain.
+  </div>
+</div>
+
+<!-- ====================================================================
+     HOW TO USE
+==================================================================== -->
+<details>
+  <summary>ℹ️ How to use this page</summary>
+  <div class="details-body">
+    <ol>
+      <li>Run <code>python train_fish_classifier.py</code> to train the model.</li>
+      <li>Run <code>python convert_model.py</code> to export the model to <code>web/model/</code>.</li>
+      <li>Open <b>this page</b> (<code>web/index.html</code>) directly in Chrome/Edge — no server needed.</li>
+      <li>Upload or drag a fish photo to classify it.</li>
+    </ol>
+    <p style="margin-top:12px">
+      <b>Adding species:</b> add a folder in <code>dataset/train/</code>, retrain, reconvert, refresh.
+    </p>
+    <p style="margin-top:8px">
+      <b>Offline use:</b> the model files inside <code>web/model/</code> are loaded from your local disk —
+      no internet connection required after the first set-up.
+    </p>
+  </div>
+</details>
+
+<footer>
+  Philippine Fish Classifier &nbsp;·&nbsp; Prototype v1.0 &nbsp;·&nbsp;
+  MobileNetV2 + Transfer Learning
+</footer>
+
+<!-- ====================================================================
+     JAVASCRIPT
+==================================================================== -->
+<script>
+// ============================================================
+// CONFIG — paths relative to this HTML file
+// ============================================================
+const MODEL_URL      = "./model/model.json?v=" + Date.now();  // TF.js model (cache busted)
+const CLASS_MAP_URL  = "./class_indices.json";       // {"Bangus":0, ...}
+
+// Species display config — add entries here when you add new species
+const SPECIES_META = {
+  Bangus:      { icon: "🐟", englishName: "Milkfish"   },
+  Tilapia:     { icon: "🐠", englishName: "Tilapia"    },
+  Galunggong:  { icon: "🐡", englishName: "Round Scad" },
+};
+const DEFAULT_ICON = "🐟";
+
+const IMG_SIZE = 224;   // must match training (MobileNetV2 standard)
+
+// ============================================================
+// GLOBAL STATE
+// ============================================================
+let model      = null;
+let classNames = null;   // e.g. ["Bangus", "Galunggong", "Tilapia"]
+let imageReady = false;
+
+// ============================================================
+// DOM REFERENCES
+// ============================================================
+const statusBar     = document.getElementById("status-bar");
+const statusDot     = document.getElementById("status-dot");
+const statusText    = document.getElementById("status-text");
+const dropZone      = document.getElementById("drop-zone");
+const fileInput     = document.getElementById("file-input");
+const browseLink    = document.getElementById("browse-link");
+const previewWrap   = document.getElementById("preview-wrap");
+const previewImg    = document.getElementById("preview-img");
+const changeBtn     = document.getElementById("change-btn");
+const classifyBtn   = document.getElementById("classify-btn");
+const resultsCard   = document.getElementById("results-card");
+const resultLabel   = document.getElementById("result-label");
+const resultConf    = document.getElementById("result-conf");
+const resultIcon    = document.getElementById("result-icon");
+const barsContainer = document.getElementById("bars-container");
+const lowConfWarn   = document.getElementById("low-conf-warn");
+
+// ============================================================
+// SET STATUS
+// ============================================================
+function setStatus(msg, state = "loading") {
+  statusText.textContent = msg;
+  statusBar.className    = state;   // "loading" | "ready" | "error"
+}
+
+// ============================================================
+// LOAD MODEL + CLASS MAP AT STARTUP
+// ============================================================
+async function initModel() {
+  setStatus("Loading class index map…");
+  try {
+    const res = await fetch(CLASS_MAP_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const indexMap = await res.json();
+    // Invert {"Bangus":0, "Galunggong":1, "Tilapia":2} → ["Bangus","Galunggong","Tilapia"]
+    classNames = Object.keys(indexMap).sort((a, b) => indexMap[a] - indexMap[b]);
+    console.log("Class names:", classNames);
+  } catch (err) {
+    console.warn("Could not load class_indices.json — using folder order from model.", err);
+    // Fallback: generic labels
+    classNames = null;
+  }
+
+  setStatus("Loading TF.js model from local files…");
+  console.log("Loading model from:", MODEL_URL);
+  try {
+    // Fetch and log model.json structure before loading
+    const modelResponse = await fetch(MODEL_URL);
+    const modelJson = await modelResponse.json();
+    console.log("model.json loaded, layers:", modelJson.modelTopology?.model_config?.config?.layers?.length);
+    console.log("First 5 layer names:", modelJson.modelTopology?.model_config?.config?.layers?.slice(0,5).map(l => l.name));
+    console.log("Weight manifest paths:", modelJson.weightsManifest?.[0]?.paths);
+    console.log("First 5 weight names:", modelJson.weightsManifest?.[0]?.weights?.slice(0,5).map(w => w.name));
+    
+    // Now load the model
+    model = await tf.loadLayersModel(MODEL_URL);
+    // Warm-up run to compile the model — avoids a cold-start delay on first prediction
+    const warmup = tf.zeros([1, IMG_SIZE, IMG_SIZE, 3]);
+    model.predict(warmup).dispose();
+    warmup.dispose();
+
+    const numClasses = model.outputShape[1];
+    if (!classNames) {
+      classNames = Array.from({ length: numClasses }, (_, i) => `Species ${i + 1}`);
+    }
+
+    setStatus(`Model ready — ${classNames.length} species: ${classNames.join(", ")}`, "ready");
+    if (imageReady) classifyBtn.disabled = false;
+
+  } catch (err) {
+    console.error("Model load error:", err);
+    setStatus(
+      `Cannot load model. Run convert_model.py first, then open this page. (${err.message})`,
+      "error"
+    );
+  }
+}
+
+// ============================================================
+// FILE / DROP HANDLING
+// ============================================================
+browseLink.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("click",   () => fileInput.click());
+
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("drag-over");
+});
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropZone.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) loadImage(file);
+});
+
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) loadImage(fileInput.files[0]);
+});
+
+changeBtn.addEventListener("click", () => {
+  previewWrap.style.display = "none";
+  dropZone.style.display    = "block";
+  classifyBtn.disabled      = true;
+  imageReady                = false;
+  resultsCard.style.display = "none";
+  fileInput.value           = "";
+});
+
+function loadImage(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    previewImg.src              = e.target.result;
+    dropZone.style.display      = "none";
+    previewWrap.style.display   = "block";
+    imageReady                  = true;
+    resultsCard.style.display   = "none";
+    classifyBtn.disabled        = (model === null);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================================
+// CLASSIFICATION
+// ============================================================
+classifyBtn.addEventListener("click", classify);
+
+async function classify() {
+  if (!model || !imageReady) return;
+
+  classifyBtn.disabled      = true;
+  classifyBtn.textContent   = "⏳ Classifying…";
+  resultsCard.style.display = "none";
+
+  try {
+    // Preprocess the image tensor
+    // Steps: decode → resize → normalise [0,1] → add batch dim
+    const imgTensor = tf.tidy(() => {
+      const img    = tf.browser.fromPixels(previewImg);         // H×W×3  uint8
+      const resized = tf.image.resizeBilinear(img, [IMG_SIZE, IMG_SIZE]); // 224×224×3
+      const norm    = resized.toFloat().div(255.0);             // [0,1]
+      return norm.expandDims(0);                                // 1×224×224×3
+    });
+
+    // Run inference
+    const predTensor = model.predict(imgTensor);
+    const probs      = await predTensor.data();    // Float32Array of probabilities
+    imgTensor.dispose();
+    predTensor.dispose();
+
+    renderResults(Array.from(probs));
+
+  } catch (err) {
+    console.error("Inference error:", err);
+    alert("Classification failed: " + err.message);
+  }
+
+  classifyBtn.disabled    = false;
+  classifyBtn.textContent = "🔍 Classify Fish";
+}
+
+// ============================================================
+// RENDER RESULTS
+// ============================================================
+function renderResults(probs) {
+  // Pair each class name with its probability
+  const pairs = classNames.map((name, i) => ({ name, prob: probs[i] ?? 0 }));
+
+  // Sort by probability descending
+  pairs.sort((a, b) => b.prob - a.prob);
+
+  const top   = pairs[0];
+  const meta  = SPECIES_META[top.name] || {};
+  const confPct = (top.prob * 100).toFixed(1);
+
+  // Top result banner
+  resultIcon.textContent = meta.icon || DEFAULT_ICON;
+  resultLabel.textContent = top.name + (meta.englishName ? ` (${meta.englishName})` : "");
+  resultConf.textContent  = `${confPct}% confidence`;
+
+  // Probability bars
+  barsContainer.innerHTML = "";
+  pairs.forEach((item, idx) => {
+    const pct    = (item.prob * 100).toFixed(1);
+    const isTop  = idx === 0;
+    const div    = document.createElement("div");
+    div.className = "bar-row";
+    div.innerHTML = `
+      <div class="bar-label">
+        <span>${item.name}</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill ${isTop ? "top" : ""}" style="width:${pct}%"></div>
+      </div>`;
+    barsContainer.appendChild(div);
+  });
+
+  // Low-confidence warning (< 60%)
+  lowConfWarn.style.display = top.prob < 0.60 ? "block" : "none";
+
+  resultsCard.style.display = "block";
+  resultsCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+initModel();
+</script>
+
+</body>
+</html>

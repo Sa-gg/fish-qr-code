@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# TensorFlow / Keras
+*.h5
+*.tflite
+fish_saved_model/
+*.npy
+*.npz
+
+# Dataset (too large for git)
+dataset/
+
+# Temporary/debug files
+*.log
+*.tmp
+*.temp
+*_out.txt
+*_err.txt
+out.txt
+out2.txt
+err.txt
+err2.txt
+t1.txt
+t2.txt
+cvt_er.txt
+cvt_ok.txt
+tfjs_test.txt
+mod_cvt.txt
+convert_output.txt
+served_model.json
+show_weights_out.txt
+tfjs_err.txt
+tdf_err.txt
+w_err.txt
+w_out.txt
+
+# Debug/utility scripts (not needed for users)
+check_init.py
+check_mismatch.py
+check_reg.py
+check_weights.py
+debug_model.py
+show_weights.py
+simple_debug.py
+tensorflow_decision_forests.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Web model weights (large binary files - users must run convert_model.py)
+web/model/*.bin
+
+# Node modules (if any)
+node_modules/
+
+# Jupyter
+.ipynb_checkpoints/

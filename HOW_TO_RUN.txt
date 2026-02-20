@@ -1,0 +1,225 @@
+# ============================================================
+# PHILIPPINE FISH CLASSIFIER — COMPLETE STEP-BY-STEP GUIDE
+# ============================================================
+# This is the definitive guide for running, retraining, and
+# using the fish classifier system end-to-end.
+# ============================================================
+
+
+SYSTEM OVERVIEW
+===============
+Your setup has 4 Python scripts and 1 web page that work in sequence:
+
+  [1] download_dataset.py     Downloads fish images automatically
+       ↓
+  [2] train_fish_classifier.py Trains the AI model
+       ↓
+  [3] convert_model.py        Exports model for browser/mobile
+       ↓
+  [4] web/index.html          Browser test page
+
+
+═══════════════════════════════════════════════════════════════
+STEP 0 — ONE-TIME SETUP  (already done, no need to repeat)
+═══════════════════════════════════════════════════════════════
+
+Open PowerShell and run:
+
+  cd "C:\Users\Name\Desktop\FINE TUNED"
+
+Install Python 3.10 (already done):
+  winget install --id Python.Python.3.10 --exact
+
+Install all libraries (already done):
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe -m pip install tensorflow Pillow numpy matplotlib icrawler
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe -m pip install tensorflowjs --no-deps
+
+NOTE: Do NOT install @tensorflow/tfjs-node via npm — that is NOT needed.
+      The web page loads TF.js from a CDN automatically.
+
+
+═══════════════════════════════════════════════════════════════
+STEP 1 — DOWNLOAD FISH IMAGES  (~2-3 minutes)
+═══════════════════════════════════════════════════════════════
+
+  cd "C:\Users\Name\Desktop\FINE TUNED"
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe download_dataset.py
+
+What it does:
+  - Searches Bing for "Bangus milkfish Philippines", "Tilapia fish Philippines",
+    "Galunggong round scad Philippines" etc.
+  - Downloads ~20 images per species into dataset/train/
+  - Automatically splits 5 images per species into dataset/validation/
+  - Skips broken/tiny files automatically
+
+Expected output:
+  Train:
+    Bangus          ~19 images
+    Galunggong      ~19 images
+    Tilapia         ~19 images
+  Validation:
+    Bangus          ~5 images
+    (etc.)
+
+To use YOUR OWN photos instead:
+  Just copy JPG/PNG files into the correct subfolder manually.
+  Example: Copy your Bangus photos to  dataset/train/Bangus/
+
+
+═══════════════════════════════════════════════════════════════
+STEP 2 — TRAIN THE AI MODEL  (~30-60 min on CPU)
+═══════════════════════════════════════════════════════════════
+
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe train_fish_classifier.py
+
+What happens:
+  PHASE 1 (fast ~10 min):
+    - Loads MobileNetV2 with ImageNet pretrained weights
+    - Freezes all 154 MobileNetV2 layers (no updates)
+    - Trains only the new classifier head (256-neuron + output layer)
+    - Saves checkpoints/phase1_best.h5 after each improvement
+    - Stops automatically if accuracy stops improving (EarlyStopping)
+
+  PHASE 2 — Fine-tuning (slower ~20-40 min):
+    - Unfreezes the last 30 MobileNetV2 layers
+    - Retrains with very small learning rate (5e-6)
+    - BatchNorm layers remain frozen for stability
+    - Saves checkpoints/phase2_best.h5
+
+  Outputs:
+    fish_classifier.h5       — the trained model
+    class_indices.json       — species label mapping
+    training_curves.png      — accuracy/loss chart
+
+What to expect:
+  With only ~57 images total, accuracy is typically 40-70%.
+  This is a PROTOTYPE — accuracy improves significantly with more images.
+  Random chance = 33% (3 species). Anything above that means it's learning.
+
+
+═══════════════════════════════════════════════════════════════
+STEP 3 — CONVERT MODEL FOR BROWSER  (~1-2 minutes)
+═══════════════════════════════════════════════════════════════
+
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe convert_model.py
+
+What it does:
+  - Loads fish_classifier.h5
+  - Converts to TFLite (for Android/iOS) → fish_classifier.tflite
+  - Converts to TensorFlow.js format (for browser) → web/model/
+  - Copies class_indices.json to web/ folder
+  - Runs a quick smoke test to verify TFLite model works
+
+Output files:
+  fish_classifier.tflite        — mobile app format
+  web/model/model.json          — TF.js model architecture
+  web/model/group1-shard1of1.bin — TF.js model weights
+  web/class_indices.json        — species labels for web app
+
+
+═══════════════════════════════════════════════════════════════
+STEP 4 — TEST IN THE BROWSER  (instant)
+═══════════════════════════════════════════════════════════════
+
+Option A — Direct file open (easiest):
+  Double-click:  web/index.html
+  Opens in Chrome or Edge — no server needed!
+
+Option B — From terminal:
+  start "" "C:\Users\Name\Desktop\FINE TUNED\web\index.html"
+
+How to use the web app:
+  1. Wait for "Model ready" status (green dot)
+  2. Click the upload area OR drag a fish photo onto it
+  3. Click "Classify Fish"
+  4. Results appear with confidence bars for all 3 species
+
+NOTE: If you see "Cannot load model":
+  → Run Step 3 first (convert_model.py) to generate web/model/ files
+
+
+═══════════════════════════════════════════════════════════════
+STEP 5 — CLI PREDICTION (optional, no browser needed)
+═══════════════════════════════════════════════════════════════
+
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe predict_fish.py path\to\fish_photo.jpg
+
+Example:
+  C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe predict_fish.py C:\Users\Name\Pictures\my_bangus.jpg
+
+Output:
+  Bangus          82.3%  ████████████████████████
+  Tilapia         10.1%  ███
+  Galunggong       7.6%  ██
+
+  Result    : Bangus
+  Confidence: 82.3%
+
+
+═══════════════════════════════════════════════════════════════
+HOW TO ADD MORE SPECIES
+═══════════════════════════════════════════════════════════════
+
+1. Create folder:  dataset/train/Maya-maya/
+2. Create folder:  dataset/validation/Maya-maya/
+3. Add ≥10 images to train/, ≥3 images to validation/
+4. Run Steps 2 and 3 again
+
+The scripts automatically detect new folders.
+No code changes needed.
+
+
+═══════════════════════════════════════════════════════════════
+HOW TO IMPROVE ACCURACY
+═══════════════════════════════════════════════════════════════
+
+Current: ~57 training images     → expect 40-70% accuracy
+Better:  ~200 training images    → expect 70-85% accuracy
+Good:    ~500+ training images   → expect 85-95% accuracy
+
+Tips:
+  - Use photos with clear, well-lit fish on a clean background
+  - Vary angles: top-down, side view, at-market
+  - Avoid photos where the fish takes up less than 30% of the frame
+  - Remove any misclassified auto-downloaded images manually
+
+
+═══════════════════════════════════════════════════════════════
+COMMON ERRORS & FIXES
+═══════════════════════════════════════════════════════════════
+
+Problem: "python is not recognized"
+Fix:     Use the full path:
+         C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe
+
+Problem: "Module not found: tensorflow"
+Fix:     C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe -m pip install tensorflow
+
+Problem: "Cannot load model" in web app
+Fix:     Run convert_model.py first
+
+Problem: npm error / node_modules error
+Fix:     Those are NOT needed. Ignore npm completely.
+         The web app uses TF.js from CDN automatically.
+
+Problem: Low accuracy (stuck at 33%)
+Fix:     Download more images, or add your own photos.
+         33% = random guessing = the model hasn't learned much yet.
+
+Problem: Training is very slow
+Fix:     This is normal on CPU. AMD A8-7680 = ~5-10 min per epoch.
+         You can set FINE_TUNE_AT = 0 at the top of train_fish_classifier.py
+         to skip Phase 2 and save ~30 minutes (at cost of some accuracy).
+
+
+═══════════════════════════════════════════════════════════════
+QUICK REFERENCE — FULL COMMAND SEQUENCE
+═══════════════════════════════════════════════════════════════
+
+  $py = "C:/Users/Name/AppData/Local/Programs/Python/Python310/python.exe"
+
+  cd "C:\Users\Name\Desktop\FINE TUNED"
+  & $py download_dataset.py        # ~3 min
+  & $py train_fish_classifier.py   # ~40-60 min
+  & $py convert_model.py           # ~2 min
+  start "" "web\index.html"        # opens browser
