@@ -28,27 +28,36 @@ from pathlib import Path
 SPECIES_CONFIG = {
     "Bangus": {
         "keywords": [
-            "Bangus milkfish Philippines fish",
-            "Chanos chanos milkfish whole",
+            "fresh raw bangus milkfish whole uncooked",
+            "bangus milkfish fresh fish market whole",
+            "live bangus milkfish Philippines raw",
+            "Chanos chanos whole fresh raw fish",
+            "bangus fish raw uncooked whole body",
         ],
-        "train_count": 20,  # images to download for training
-        "val_count":   5,   # images to download for validation
+        "train_count": 60,  # images to download for training
+        "val_count":   15,  # images to download for validation
     },
     "Tilapia": {
         "keywords": [
-            "Tilapia fish Philippines whole",
-            "Nile tilapia fresh fish",
+            "fresh raw tilapia whole fish uncooked",
+            "tilapia fish market fresh live whole",
+            "Nile tilapia fresh raw whole fish",
+            "tilapia Philippines fresh fish raw",
+            "tilapia fish uncooked whole body fresh",
         ],
-        "train_count": 20,
-        "val_count":   5,
+        "train_count": 60,
+        "val_count":   15,
     },
     "Galunggong": {
         "keywords": [
-            "Galunggong round scad Philippines",
-            "Decapterus macrosoma fish",
+            "fresh raw galunggong round scad whole",
+            "galunggong fish market fresh uncooked",
+            "Decapterus macrosoma fresh whole fish",
+            "round scad fish fresh raw whole Philippines",
+            "galunggong fresh fish raw uncooked whole body",
         ],
-        "train_count": 20,
-        "val_count":   5,
+        "train_count": 60,
+        "val_count":   15,
     },
 }
 

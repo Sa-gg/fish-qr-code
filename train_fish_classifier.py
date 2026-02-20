@@ -148,7 +148,7 @@ print(f"   Validation images : {val_total}")
 class_indices = {name: idx for idx, name in enumerate(CLASS_NAMES)}
 with open("class_indices.json", "w") as f:
     json.dump(class_indices, f, indent=2)
-print("   Class map saved   → class_indices.json")
+print("   Class map saved   -> class_indices.json")
 
 # ---- Preprocessing & Augmentation layers ----
 # Rescaling converts pixel values from [0,255] → [0,1] as MobileNetV2 expects.
@@ -333,8 +333,8 @@ else:
 
 print(f"\n[6/6] Saving model...")
 model.save(MODEL_SAVE_H5)
-print(f"   Keras H5 saved  → {MODEL_SAVE_H5}")
-print(f"   Next step       → python convert_model.py")
+print(f"   Keras H5 saved  -> {MODEL_SAVE_H5}")
+print(f"   Next step       -> python convert_model.py")
 
 # =============================================================================
 # TRAINING CURVES
@@ -358,7 +358,7 @@ for ax, metric, title in [
 
 plt.tight_layout()
 plt.savefig("training_curves.png", dpi=150, bbox_inches="tight")
-print("   Training chart  → training_curves.png")
+print("   Training chart  -> training_curves.png")
 
 # =============================================================================
 # FINAL SUMMARY
