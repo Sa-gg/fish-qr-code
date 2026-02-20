@@ -1,0 +1,14 @@
+Place your Galunggong VALIDATION images here (separate from training images).
+
+Suggested filenames:
+  galunggong_val_001.jpg
+  galunggong_val_002.jpg
+  ...
+  galunggong_val_005.jpg
+
+Tips:
+  - Use 3-5 images for validation when your dataset is very small.
+  - These images must NOT be used in the training folder.
+  - Validation images let the model check its accuracy on unseen data.
+
+NOTE: Delete this folder if you are not using Galunggong.

@@ -1,0 +1,12 @@
+Place your Tilapia VALIDATION images here (separate from training images).
+
+Suggested filenames:
+  tilapia_val_001.jpg
+  tilapia_val_002.jpg
+  ...
+  tilapia_val_005.jpg
+
+Tips:
+  - Use 3-5 images for validation when your dataset is very small.
+  - These images must NOT be used in the training folder.
+  - Validation images let the model check its accuracy on unseen data.

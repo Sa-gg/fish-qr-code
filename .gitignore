@@ -10,15 +10,13 @@ venv/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# TensorFlow / Keras
-*.h5
-*.tflite
+# TensorFlow / Keras - intermediate artifacts only
 fish_saved_model/
 *.npy
 *.npz
 
-# Dataset (too large for git)
-dataset/
+# Web model weights (large binary files - users must run convert_model.py)
+# web/model/*.bin   <-- INCLUDED so laptop users can run without retraining
 
 # Temporary/debug files
 *.log
@@ -64,9 +62,6 @@ tensorflow_decision_forests.py
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# Web model weights (large binary files - users must run convert_model.py)
-web/model/*.bin
 
 # Node modules (if any)
 node_modules/
