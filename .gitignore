@@ -16,6 +16,8 @@ fish_saved_model/
 *.npz
 
 # Web model weights (large binary files - users must run convert_model.py)
+dataset
+
 # web/model/*.bin   <-- INCLUDED so laptop users can run without retraining
 
 # Temporary/debug files
